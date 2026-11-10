@@ -14,6 +14,7 @@ BIRD_FRAMES = (
     (34, 392, 146, 108), (216, 394, 146, 106),
     (376, 395, 168, 88), (546, 370, 180, 114),
 )
+BIRD_HALF_WIDTH = max(frame[2] for frame in BIRD_FRAMES) / 2.0
 ANIMATION_FRAMES_PER_SECOND = 12.0
 BIRD_SCALE = 1.0
 WORLD_PIXELS_PER_METER = 10.0 / 0.3
@@ -37,12 +38,22 @@ class Bird:
             ANIMATION_FRAMES_PER_SECOND * frame_time
         ) % len(BIRD_FRAMES)
         self.x += self.direction * FLIGHT_SPEED_PPS * frame_time
+        left_limit = BIRD_HALF_WIDTH
+        right_limit = get_canvas_width() - BIRD_HALF_WIDTH
+        while self.x < left_limit or self.x > right_limit:
+            if self.x > right_limit:
+                self.x = right_limit - (self.x - right_limit)
+                self.direction = -1
+            elif self.x < left_limit:
+                self.x = left_limit + (left_limit - self.x)
+                self.direction = 1
 
     def draw(self):
         frame_index = int(self.animation_frame)
         sx, top, sw, sh = BIRD_FRAMES[frame_index]
         sy = SHEET_HEIGHT - top - sh
-        self.image.clip_draw(
-            sx, sy, sw, sh,
+        flip = 'h' if self.direction < 0 else ''
+        self.image.clip_composite_draw(
+            sx, sy, sw, sh, 0, flip,
             self.x, self.y, sw * BIRD_SCALE, sh * BIRD_SCALE
         )
